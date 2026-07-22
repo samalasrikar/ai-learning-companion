@@ -1,7 +1,8 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import { uploadDocumentController } from './controller.js';
+import { uploadDocumentController, getDocumentsController } from './controller.js';
+import { optionalAuthenticateUser } from '../../middleware/auth.middleware.js';
 
 const router = express.Router();
 
@@ -36,8 +37,9 @@ const upload = multer({
   },
 });
 
-// Map POST /upload route
-router.post('/upload', upload.single('file'), uploadDocumentController);
+// Map GET / (list documents) and POST /upload (upload PDF)
+router.get('/', getDocumentsController);
+router.post('/upload', optionalAuthenticateUser, upload.single('file'), uploadDocumentController);
 
 // Local router interceptor to capture Multer validation errors
 router.use((err, req, res, next) => {

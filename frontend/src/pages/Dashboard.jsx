@@ -14,9 +14,11 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import FeatureCard from '../components/common/FeatureCard';
 import EmptyState from '../components/common/EmptyState';
+import { useAuth } from '../context/AuthContext';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [courses] = useState([]);
 
   return (
@@ -25,7 +27,7 @@ export default function Dashboard() {
       <section className="bg-card border border-border/40 p-6 rounded-2xl relative overflow-hidden shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="space-y-1.5 max-w-xl relative z-10">
           <h2 className="text-xl md:text-2xl font-extrabold tracking-tight text-foreground">
-            Good morning, Alex.
+            Welcome back, {user?.firstName || 'Student'}.
           </h2>
           <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
             Ready to accelerate your learning? Upload study notes and documents to get started.

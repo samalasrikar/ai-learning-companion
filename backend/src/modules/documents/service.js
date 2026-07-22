@@ -5,9 +5,10 @@ import { extractPdfData } from './pdf.service.js';
 /**
  * Register document upload metadata and extract its text content to MongoDB.
  * @param {Object} file - The file object processed by multer.
+ * @param {string} [userId] - Optional User ObjectId string of the uploader.
  * @returns {Promise<Object>} The saved MongoDB Document model.
  */
-export const registerDocument = async (file) => {
+export const registerDocument = async (file, userId = null) => {
   if (!file) {
     throw new Error('No file metadata provided');
   }
@@ -37,10 +38,21 @@ export const registerDocument = async (file) => {
     size: file.size,
     extractedText: extractedData.text,
     pages: extractedData.pages,
+    uploadedBy: userId || null,
   });
 
   const savedDocument = await newDocument.save();
   return savedDocument;
+};
+
+/**
+ * Fetch all documents with populated uploader details.
+ */
+export const getAllDocumentsService = async () => {
+  const documents = await Document.find()
+    .populate('uploadedBy', 'firstName lastName email avatar')
+    .sort({ uploadedAt: -1 });
+  return documents;
 };
 
 /**

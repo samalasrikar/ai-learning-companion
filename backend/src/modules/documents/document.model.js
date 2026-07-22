@@ -26,10 +26,17 @@ const documentSchema = new mongoose.Schema({
     type: Number,
     required: [true, 'PDF page count is required'],
   },
+  uploadedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
   uploadedAt: {
     type: Date,
     default: Date.now,
   },
+}, {
+  collection: 'documents',
 });
 
 const Document = mongoose.model('Document', documentSchema);
