@@ -2,8 +2,18 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import chatRoutes from './routes/chat.routes.js';
+import fs from 'fs';
+import chatRoutes from './modules/chat/chat.routes.js';
+import documentsRoutes from './modules/documents/routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
+
+// Auto-scaffold uploads directory if it does not exist on boot
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+}
+if (!fs.existsSync('uploads/documents')) {
+  fs.mkdirSync('uploads/documents');
+}
 
 const app = express();
 
@@ -24,6 +34,7 @@ app.get('/api/health', (req, res) => {
 
 // Register Routes
 app.use('/api', chatRoutes);
+app.use('/api/documents', documentsRoutes);
 
 // Global Error Handler
 app.use(errorHandler);

@@ -1,20 +1,15 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import MainLayout from './layouts/MainLayout';
-import Dashboard from './pages/Dashboard';
-import Chat from './pages/Chat';
+import { BrowserRouter } from 'react-router-dom';
+import AppRoutes from './routes/AppRoutes';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { Toaster } from '@/components/ui/sonner';
 
 export default function App() {
   return (
     <TooltipProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="chat" element={<Chat />} />
-          </Route>
-        </Routes>
+        <AppRoutes />
+        <Toaster />
       </BrowserRouter>
     </TooltipProvider>
   );

@@ -1,9 +1,16 @@
 import axios from 'axios';
 
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'openrouter/free';
+
+if (!OPENROUTER_API_KEY) {
+  console.warn('OPENROUTER_API_KEY is not set. Chat requests will fail until it is configured.');
+}
+
 const openRouterClient = axios.create({
   baseURL: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
   headers: {
-    'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+    'Authorization': `Bearer ${OPENROUTER_API_KEY || ''}`,
     'Content-Type': 'application/json',
     'HTTP-Referer': process.env.SITE_URL || 'http://localhost:5000',
     'X-Title': process.env.SITE_NAME || 'AI Learning Companion',
@@ -17,10 +24,16 @@ const openRouterClient = axios.create({
  * @param {Object} [options] - Additional API parameters (temperature, max_tokens, etc.).
  * @returns {Promise<Object>} The API response data.
  */
-export const generateCompletion = async (messages, model = 'openrouter/free', options = {}) => {
+export const generateCompletion = async (messages, model = OPENROUTER_MODEL, options = {}) => {
+  if (!OPENROUTER_API_KEY) {
+    const err = new Error('OPENROUTER_API_KEY is not configured');
+    err.status = 503;
+    throw err;
+  }
+
   try {
     const response = await openRouterClient.post('/chat/completions', {
-      model,
+      model: model || OPENROUTER_MODEL,
       messages,
       ...options,
     });
