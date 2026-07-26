@@ -11,6 +11,7 @@ import {
   saveMessageService,
 } from '../../services/message.service.js';
 import { processChat } from '../../ai/services/chat.service.js';
+import { getSettingsService } from '../../services/systemAdmin.service.js';
 import Message from '../../models/message.model.js';
 
 /**
@@ -28,7 +29,7 @@ export const createConversationHandler = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get all conversations for the authenticated user.
+ * Get all conversation threads for current user.
  * @route GET /api/chat/conversations
  */
 export const getConversationsHandler = asyncHandler(async (req, res) => {
@@ -42,57 +43,29 @@ export const getConversationsHandler = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get single conversation by ID.
+ * Get conversation details by ID.
  * @route GET /api/chat/conversations/:id
  */
 export const getConversationByIdHandler = asyncHandler(async (req, res) => {
-  const conversation = await getConversationByIdService(req.params.id, req.user._id);
-
-  res.status(200).json({
-    success: true,
-    conversation,
-  });
-});
-
-/**
- * Update conversation title manually (Rename Chat).
- * @route PATCH /api/chat/conversations/:id
- */
-export const updateConversationTitleHandler = asyncHandler(async (req, res) => {
-  const { title } = req.body;
-  if (!title || typeof title !== 'string' || !title.trim()) {
-    res.status(400);
-    throw new Error('Please provide a valid conversation title');
+  const { id } = req.params;
+  const conversation = await getConversationByIdService(id, req.user._id);
+  if (!conversation) {
+    res.status(404);
+    throw new Error('Conversation not found');
   }
-
-  const conversation = await updateConversationTitleService(req.params.id, req.user._id, title.trim());
-
   res.status(200).json({
     success: true,
-    message: 'Conversation renamed successfully',
     conversation,
   });
 });
 
 /**
- * Delete conversation and all its messages.
- * @route DELETE /api/chat/conversations/:id
- */
-export const deleteConversationHandler = asyncHandler(async (req, res) => {
-  await deleteConversationService(req.params.id, req.user._id);
-
-  res.status(200).json({
-    success: true,
-    message: 'Conversation deleted successfully',
-  });
-});
-
-/**
- * Get messages for a specific conversation.
+ * Get transcript / messages for a specific conversation.
  * @route GET /api/chat/messages/:conversationId
  */
 export const getMessagesHandler = asyncHandler(async (req, res) => {
-  const messages = await getMessagesByConversationService(req.params.conversationId, req.user._id);
+  const { conversationId } = req.params;
+  const messages = await getMessagesByConversationService(conversationId, req.user._id);
 
   res.status(200).json({
     success: true,
@@ -101,22 +74,64 @@ export const getMessagesHandler = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * Send user message, execute AI inference, auto-title on 1st prompt, and save assistant response.
- * @route POST /api/chat/messages
- */
-export const sendMessageHandler = asyncHandler(async (req, res) => {
-  let { conversationId, message, documentId } = req.body;
+export const getConversationMessagesHandler = getMessagesHandler;
 
-  if (!message || typeof message !== 'string' || !message.trim()) {
+/**
+ * Delete a conversation thread.
+ * @route DELETE /api/chat/conversations/:id
+ */
+export const deleteConversationHandler = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const result = await deleteConversationService(id, req.user._id);
+
+  res.status(200).json({
+    success: true,
+    message: 'Conversation deleted successfully',
+    result,
+  });
+});
+
+/**
+ * Rename a conversation thread.
+ * @route PATCH /api/chat/conversations/:id
+ */
+export const updateConversationTitleHandler = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { title } = req.body;
+
+  if (!title || !title.trim()) {
     res.status(400);
-    throw new Error('Please provide a valid message content');
+    throw new Error('Title is required');
   }
 
-  // 1. If no conversationId provided or invalid, create new conversation for user
-  let conversation = null;
+  const updatedConversation = await updateConversationTitleService(id, req.user._id, title.trim());
+
+  res.status(200).json({
+    success: true,
+    conversation: updatedConversation,
+  });
+});
+
+/**
+ * Main chat message handler:
+ * Accepts student question message, saves user message, invokes RAG service,
+ * saves assistant response with sources and mode, and returns JSON.
+ * @route POST /api/chat/message
+ */
+export const sendMessage = asyncHandler(async (req, res) => {
+  const { message, conversationId: reqConvId, documentId } = req.body;
+
+  if (!message || !message.trim()) {
+    res.status(400);
+    throw new Error('Message is required');
+  }
+
+  // 1. Get or create active conversation thread
+  let conversationId = reqConvId;
+  let conversation;
+
   if (conversationId) {
-    conversation = await getConversationByIdService(conversationId, req.user._id).catch(() => null);
+    conversation = await getConversationByIdService(conversationId, req.user._id);
   }
 
   if (!conversation) {
@@ -136,11 +151,20 @@ export const sendMessageHandler = asyncHandler(async (req, res) => {
     }
   }
 
-  // 4. Execute AI processChat
-  const responseText = await processChat(message.trim(), documentId);
+  // 4. Execute AI RAG query via processChat with system settings
+  const systemSettings = await getSettingsService();
+  const ragResult = await processChat(message.trim(), documentId, {
+    userId: req.user._id,
+    mode: systemSettings?.aiResponseMode || 'hybrid',
+    similarityThreshold: systemSettings?.similarityThreshold ?? 0.75,
+  });
 
-  // 5. Save assistant response to MongoDB
-  const assistantMessage = await saveMessageService(conversationId, 'assistant', responseText);
+  const responseText = typeof ragResult === 'string' ? ragResult : (ragResult.answer || '');
+  const sources = typeof ragResult === 'object' ? (ragResult.sources || []) : [];
+  const mode = typeof ragResult === 'object' ? (ragResult.mode || (sources.length > 0 ? 'rag' : 'general')) : 'rag';
+
+  // 5. Save assistant response with cited document sources and mode to MongoDB
+  const assistantMessage = await saveMessageService(conversationId, 'assistant', responseText, sources, mode);
 
   res.status(200).json({
     success: true,
@@ -149,5 +173,9 @@ export const sendMessageHandler = asyncHandler(async (req, res) => {
     userMessage,
     assistantMessage,
     response: responseText,
+    sources,
+    mode,
   });
 });
+
+export const sendMessageHandler = sendMessage;

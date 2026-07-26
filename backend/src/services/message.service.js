@@ -18,13 +18,15 @@ export const getMessagesByConversationService = async (conversationId, userId) =
 };
 
 /**
- * Saves a user or assistant message to MongoDB.
+ * Saves a user or assistant message along with optional RAG sources to MongoDB.
  */
-export const saveMessageService = async (conversationId, role, content) => {
+export const saveMessageService = async (conversationId, role, content, sources = [], mode = 'rag') => {
   const message = await Message.create({
     conversationId,
     role,
     content,
+    sources,
+    mode,
   });
 
   // Touch conversation updatedAt timestamp

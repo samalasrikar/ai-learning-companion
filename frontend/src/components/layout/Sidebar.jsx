@@ -20,6 +20,7 @@ import {
   Settings as SettingsIcon,
   ShieldAlert,
   Activity,
+  Database,
   LogOut,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -39,6 +40,7 @@ export default function AppSidebar() {
 
   const adminMenuItems = [
     { title: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+    { title: 'RAG Store', path: '/admin/rag', icon: Database },
     { title: 'Students', path: '/admin/students', icon: Users },
     { title: 'Documents', path: '/admin/documents', icon: FileText },
     { title: 'AI Chats', path: '/admin/chats', icon: MessageSquare },

@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Save, RefreshCw, Cpu, Upload, Sliders } from 'lucide-react';
+import { Settings as SettingsIcon, Save, RefreshCw, Cpu, Upload, Sliders, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../services/api';
 
 export default function Settings() {
   const [formData, setFormData] = useState({
     appName: 'Jarvis AI',
-    defaultAiModel: 'gemini-1.5-flash',
+    defaultAiModel: 'openrouter/free',
     maxFileSizeMB: 20,
     maxChatHistory: 50,
     allowedFileTypes: ['PDF', 'DOCX', 'TXT'],
-    llmProvider: 'Google Gemini',
+    llmProvider: 'OpenRouter',
     maxTokens: 2048,
     temperature: 0.7,
     contextWindowSize: 8192,
     maxUploadsPerStudent: 50,
+    aiResponseMode: 'hybrid',
+    similarityThreshold: 0.75,
   });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +44,7 @@ export default function Settings() {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'number' ? parseFloat(value) : value,
+      [name]: type === 'number' || type === 'range' ? parseFloat(value) : value,
     }));
   };
 
@@ -70,7 +72,7 @@ export default function Settings() {
             <SettingsIcon className="w-4 h-4" /> System Administration
           </div>
           <h1 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">Application Settings</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Configure global parameters for application branding, AI models, and document uploads</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Configure global parameters for application branding, AI response modes, and document uploads</p>
         </div>
         <button
           onClick={fetchSettings}
@@ -85,6 +87,90 @@ export default function Settings() {
         <div className="py-20 text-center text-xs text-slate-400">Loading settings from MongoDB...</div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-8">
+          {/* AI Response Mode & Hybrid RAG Card */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <Sparkles className="w-5 h-5 text-indigo-600" />
+              <span>AI Response Mode & Hybrid Parameters</span>
+            </h3>
+
+            <div className="space-y-4 text-xs">
+              <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase">
+                AI Response Mode
+              </label>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  {
+                    id: 'strict_rag',
+                    label: 'Strict RAG',
+                    desc: 'Answer strictly using uploaded documents. Refuse if not found in docs.',
+                  },
+                  {
+                    id: 'hybrid',
+                    label: 'Hybrid (Recommended)',
+                    desc: 'Use RAG if relevant docs match. Fall back to General AI if no docs match.',
+                  },
+                  {
+                    id: 'general_only',
+                    label: 'General AI Only',
+                    desc: 'Bypass document vector search and rely purely on General AI knowledge.',
+                  },
+                ].map((modeOpt) => (
+                  <label
+                    key={modeOpt.id}
+                    className={`flex flex-col p-4 rounded-xl border cursor-pointer transition-all ${
+                      formData.aiResponseMode === modeOpt.id
+                        ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-900 dark:text-indigo-200 ring-2 ring-indigo-500/20 font-semibold'
+                        : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 font-bold text-sm mb-1">
+                      <input
+                        type="radio"
+                        name="aiResponseMode"
+                        value={modeOpt.id}
+                        checked={formData.aiResponseMode === modeOpt.id}
+                        onChange={handleChange}
+                        className="text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span>{modeOpt.label}</span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
+                      {modeOpt.desc}
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase">
+                    Vector Similarity Threshold ({formData.similarityThreshold || 0.75})
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      name="similarityThreshold"
+                      min="0.1"
+                      max="1.0"
+                      step="0.05"
+                      value={formData.similarityThreshold || 0.75}
+                      onChange={handleChange}
+                      className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                    />
+                    <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 px-2 py-1 bg-indigo-50 dark:bg-indigo-950 rounded-lg">
+                      {formData.similarityThreshold || 0.75}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Minimum cosine similarity score required to use document context in Hybrid mode (Default: 0.75).
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* General Settings Card */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">

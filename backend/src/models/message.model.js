@@ -16,6 +16,20 @@ const messageSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Message content is required'],
     },
+    sources: [
+      {
+        filename: String,
+        page_number: Number,
+        document_id: String,
+        chunk_id: String,
+        similarity_score: Number,
+      },
+    ],
+    mode: {
+      type: String,
+      enum: ['rag', 'general'],
+      default: 'rag',
+    },
   },
   {
     timestamps: true,

@@ -12,7 +12,12 @@ export const getSettingsService = async () => {
   if (!settings) {
     settings = await Settings.create({});
   }
-  return settings;
+  const obj = settings.toObject();
+  obj.llmProvider = 'OpenRouter';
+  if (process.env.OPENROUTER_MODEL) {
+    obj.defaultAiModel = process.env.OPENROUTER_MODEL;
+  }
+  return obj;
 };
 
 export const updateSettingsService = async (updateData) => {
@@ -28,11 +33,11 @@ export const updateSettingsService = async (updateData) => {
 
 export const getSystemStatusService = async () => {
   const mongoStatus = mongoose.connection.readyState === 1 ? 'Healthy' : 'Offline';
-  const hasGeminiKey = !!process.env.GEMINI_API_KEY;
+  const hasOpenRouterKey = !!process.env.OPENROUTER_API_KEY;
 
   return [
     { name: 'MongoDB Database', status: mongoStatus === 'Healthy' ? 'Healthy' : 'Offline', lastChecked: new Date() },
-    { name: 'AI Provider (Gemini API)', status: hasGeminiKey ? 'Healthy' : 'Warning', lastChecked: new Date() },
+    { name: 'AI Provider (OpenRouter API)', status: hasOpenRouterKey ? 'Healthy' : 'Warning', lastChecked: new Date() },
     { name: 'File Storage Service', status: 'Healthy', lastChecked: new Date() },
     { name: 'Backend Express API', status: 'Healthy', lastChecked: new Date() },
     { name: 'Frontend Client App', status: 'Healthy', lastChecked: new Date() },

@@ -53,6 +53,7 @@ export function useChatSession() {
             id: m._id,
             role: m.role,
             text: m.content,
+            sources: m.sources || [],
             timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           }))
         );
@@ -191,6 +192,7 @@ export function useChatSession() {
             id: result.assistantMessage?._id,
             role: 'assistant',
             text: result.response,
+            sources: result.sources || result.assistantMessage?.sources || [],
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           },
         ]);

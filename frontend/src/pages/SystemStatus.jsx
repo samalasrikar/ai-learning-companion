@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Activity, HardDrive, ShieldCheck, Wrench, Download, RefreshCw, Bell, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../services/api';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 export default function SystemStatus() {
   const [statusList, setStatusList] = useState([]);
@@ -10,6 +11,16 @@ export default function SystemStatus() {
   const [notifications, setNotifications] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+
+  // Confirm dialog state for maintenance tasks
+  const [confirmState, setConfirmState] = useState({
+    isOpen: false,
+    title: '',
+    description: '',
+    confirmText: '',
+    variant: 'warning',
+    onConfirm: null,
+  });
 
   const fetchStatus = async () => {
     setIsLoading(true);
@@ -39,8 +50,19 @@ export default function SystemStatus() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const handleClearCache = async () => {
-    if (!window.confirm('Clear all temporary cached files and AI response buffers?')) return;
+  const requestClearCache = () => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Clear Temporary Cache',
+      description: 'Clear all temporary cached files and AI response buffers?',
+      confirmText: 'Clear Cache',
+      variant: 'warning',
+      onConfirm: executeClearCache,
+    });
+  };
+
+  const executeClearCache = async () => {
+    setConfirmState((prev) => ({ ...prev, isOpen: false }));
     try {
       const res = await api.post('/admin/maintenance/clear-cache');
       if (res.data?.success) toast.success(res.data.message);
@@ -49,8 +71,19 @@ export default function SystemStatus() {
     }
   };
 
-  const handleReindex = async () => {
-    if (!window.confirm('Rebuild document indexes and clean orphaned uploads?')) return;
+  const requestReindex = () => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Rebuild Indexes',
+      description: 'Rebuild document indexes and clean orphaned uploads across the system?',
+      confirmText: 'Rebuild Indexes',
+      variant: 'warning',
+      onConfirm: executeReindex,
+    });
+  };
+
+  const executeReindex = async () => {
+    setConfirmState((prev) => ({ ...prev, isOpen: false }));
     try {
       const res = await api.post('/admin/maintenance/reindex');
       if (res.data?.success) toast.success(res.data.message);
@@ -174,13 +207,13 @@ export default function SystemStatus() {
               <div className="space-y-3 text-xs">
                 <div className="flex flex-wrap gap-3">
                   <button
-                    onClick={handleClearCache}
+                    onClick={requestClearCache}
                     className="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
                   >
                     Clear Temp Cache
                   </button>
                   <button
-                    onClick={handleReindex}
+                    onClick={requestReindex}
                     className="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
                   >
                     Rebuild Indexes
@@ -206,6 +239,17 @@ export default function SystemStatus() {
           </div>
         </>
       )}
+
+      {/* Shared Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={() => setConfirmState((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmState.onConfirm}
+        title={confirmState.title}
+        description={confirmState.description}
+        confirmText={confirmState.confirmText}
+        variant={confirmState.variant}
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import User from '../models/user.model.js';
 import Document from '../modules/documents/document.model.js';
 import Conversation from '../models/conversation.model.js';
 import Message from '../models/message.model.js';
+import { deleteDocumentVectorsRagService } from './ragClient.service.js';
 
 /**
  * Calculate real admin dashboard statistics from MongoDB.
@@ -112,7 +113,7 @@ export const getAdminDocumentsService = async (searchQuery = '') => {
 };
 
 /**
- * Delete a document and clean up its file on disk.
+ * Delete a document and clean up its file on disk, Chroma Cloud vectors, and MongoDB metadata.
  */
 export const deleteAdminDocumentService = async (documentId) => {
   const document = await Document.findById(documentId);
@@ -122,6 +123,7 @@ export const deleteAdminDocumentService = async (documentId) => {
     throw err;
   }
 
+  // 1. Delete physical PDF file from centralized uploads directory
   if (document.path && fs.existsSync(document.path)) {
     try {
       fs.unlinkSync(document.path);
@@ -130,6 +132,14 @@ export const deleteAdminDocumentService = async (documentId) => {
     }
   }
 
+  // 2. Delete vector embeddings from Chroma Cloud
+  try {
+    await deleteDocumentVectorsRagService(documentId);
+  } catch (ragErr) {
+    console.error(`Failed to delete vectors for doc ${documentId} from Chroma Cloud:`, ragErr.message);
+  }
+
+  // 3. Delete metadata record from MongoDB
   await Document.findByIdAndDelete(documentId);
   return document;
 };

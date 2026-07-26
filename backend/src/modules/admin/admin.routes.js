@@ -20,6 +20,11 @@ import {
   markNotificationRead,
   exportData,
   globalSearch,
+  getAdminRagStats,
+  getAdminRagDebugInfo,
+  reindexAdminDocument,
+  deleteAdminDocumentVectors,
+  rebuildAdminVectorStore,
 } from './admin.controller.js';
 import { authenticateUser, authorizeAdmin } from '../../middleware/auth.middleware.js';
 
@@ -41,6 +46,13 @@ router.delete('/chats/:conversationId', deleteAdminChat);
 
 // Aggregated Analytics endpoint
 router.get('/analytics', getAdminAnalytics);
+
+// Admin RAG Management endpoints
+router.get('/rag/stats', getAdminRagStats);
+router.get('/rag/debug', getAdminRagDebugInfo);
+router.post('/rag/reindex/:documentId', reindexAdminDocument);
+router.delete('/rag/documents/:documentId', deleteAdminDocumentVectors);
+router.post('/rag/rebuild', rebuildAdminVectorStore);
 
 // Phase 3 Endpoints
 router.get('/settings', getSettings);

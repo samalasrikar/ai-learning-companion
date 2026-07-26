@@ -4,12 +4,15 @@ import { toast } from 'sonner';
 import api from '../services/api';
 import AdminDocumentTable from '../components/admin/AdminDocumentTable';
 import AdminDocumentPreviewModal from '../components/admin/AdminDocumentPreviewModal';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 export default function AdminDocuments() {
   const [documents, setDocuments] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [previewDoc, setPreviewDoc] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchDocuments = async () => {
     setIsLoading(true);
@@ -34,19 +37,24 @@ export default function AdminDocuments() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const handleDeleteDocument = async (docId, docName) => {
-    if (!window.confirm(`Are you sure you want to delete "${docName}"? This will remove the file from MongoDB and storage.`)) {
-      return;
-    }
+  const requestDeleteDocument = (docId, docName) => {
+    setDeleteTarget({ id: docId, name: docName });
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
     try {
-      const res = await api.delete(`/admin/documents/${docId}`);
+      const res = await api.delete(`/admin/documents/${deleteTarget.id}`);
       if (res.data?.success) {
-        toast.success(`Deleted "${docName}" successfully`);
-        setDocuments((prev) => prev.filter((d) => d._id !== docId));
+        toast.success(`Deleted "${deleteTarget.name}" successfully`);
+        setDocuments((prev) => prev.filter((d) => d._id !== deleteTarget.id));
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete document');
+    } finally {
+      setIsDeleting(false);
+      setDeleteTarget(null);
     }
   };
 
@@ -103,7 +111,7 @@ export default function AdminDocuments() {
             documents={documents}
             isLoading={isLoading}
             onPreview={(doc) => setPreviewDoc(doc)}
-            onDelete={handleDeleteDocument}
+            onDelete={requestDeleteDocument}
             getFileUrl={getFileUrl}
           />
         </div>
@@ -114,6 +122,19 @@ export default function AdminDocuments() {
         document={previewDoc}
         onClose={() => setPreviewDoc(null)}
         getFileUrl={getFileUrl}
+      />
+
+      {/* Shared Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => !isDeleting && setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Document"
+        description="Are you sure you want to delete this document? This will remove the file from MongoDB and storage."
+        itemName={deleteTarget?.name}
+        confirmText="Delete Document"
+        variant="danger"
+        isLoading={isDeleting}
       />
     </div>
   );

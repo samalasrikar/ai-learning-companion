@@ -1,14 +1,16 @@
 import axios from 'axios';
+import { getAiConfig } from '../../config/ai.config.js';
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'openrouter/free';
+const aiConfig = getAiConfig();
+const OPENROUTER_API_KEY = aiConfig.apiKey;
+const OPENROUTER_MODEL = aiConfig.model;
 
 if (!OPENROUTER_API_KEY) {
   console.warn('OPENROUTER_API_KEY is not set. Chat requests will fail until it is configured.');
 }
 
 const openRouterClient = axios.create({
-  baseURL: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
+  baseURL: aiConfig.baseUrl,
   headers: {
     'Authorization': `Bearer ${OPENROUTER_API_KEY || ''}`,
     'Content-Type': 'application/json',
@@ -20,11 +22,11 @@ const openRouterClient = axios.create({
 /**
  * Sends a completion request to OpenRouter API.
  * @param {Array<Object>} messages - Array of chat messages in OpenAI format.
- * @param {string} [model] - The AI model to use. Defaults to google/gemini-2.5-flash.
+ * @param {string} [model] - The AI model to use. Defaults to the configured OpenRouter model.
  * @param {Object} [options] - Additional API parameters (temperature, max_tokens, etc.).
  * @returns {Promise<Object>} The API response data.
  */
-export const generateCompletion = async (messages, model = OPENROUTER_MODEL, options = {}) => {
+export const generateCompletion = async (messages, model = null, options = {}) => {
   if (!OPENROUTER_API_KEY) {
     const err = new Error('OPENROUTER_API_KEY is not configured');
     err.status = 503;
@@ -33,7 +35,7 @@ export const generateCompletion = async (messages, model = OPENROUTER_MODEL, opt
 
   try {
     const response = await openRouterClient.post('/chat/completions', {
-      model: model || OPENROUTER_MODEL,
+      model: model || getAiConfig().model,
       messages,
       ...options,
     });

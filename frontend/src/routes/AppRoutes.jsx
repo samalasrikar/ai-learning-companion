@@ -23,6 +23,8 @@ import Settings from '../pages/Settings';
 import ActivityLogs from '../pages/ActivityLogs';
 import SystemStatus from '../pages/SystemStatus';
 
+import AdminRagManagement from '../pages/AdminRagManagement';
+
 export default function AppRoutes() {
   return (
     <AuthProvider>
@@ -38,6 +40,7 @@ export default function AppRoutes() {
         <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
           <Route element={<DashboardLayout />}>
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/rag" element={<AdminRagManagement />} />
             <Route path="/admin/students" element={<AdminStudents />} />
             <Route path="/admin/documents" element={<AdminDocuments />} />
             <Route path="/admin/chats" element={<AdminChats />} />

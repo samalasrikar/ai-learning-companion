@@ -1,25 +1,13 @@
-import { generateCompletion } from '../providers/openrouter.provider.js';
-import { getTutorSystemPrompt } from '../prompts/tutor.prompt.js';
-import { getDocumentSystemInstructions, formatDocumentContext } from '../prompts/document.prompt.js';
-import { retrieveDocumentContext } from './retrieval.service.js';
+import { queryRagService } from '../../services/ragClient.service.js';
 
 /**
- * Handles chat logic and returns AI generated response.
- * Preserves full backward compatibility while supporting optional history & RAG retrieval.
+ * Handles student chat questions by forwarding requests via HTTP Axios to the FastAPI RAG service.
+ * Eliminates duplication of RAG logic inside the Node.js backend.
  * 
- * Prompt Construction Sequence:
- * System Persona (+ Document Grounding Rules if doc attached)
- * ↓
- * Conversation History (if provided)
- * ↓
- * Retrieved Document Context + User Message
- * 
- * @param {string} message - The user prompt message.
- * @param {string} [documentId] - Optional uploaded document identifier context.
- * @param {Object} [options={}] - Additional chat execution options.
- * @param {Array<{role: string, content: string}>} [options.history=[]] - Conversation history messages.
- * @param {string} [options.model] - Optional LLM model override.
- * @returns {Promise<string>} The generated text response.
+ * @param {string} message - The user prompt/question message.
+ * @param {string} [documentId] - Optional document context ID.
+ * @param {Object} [options={}] - Additional options (userId, topK, mode, similarityThreshold, etc.).
+ * @returns {Promise<Object>} Object containing answer text, cited sources, and mode.
  */
 export const processChat = async (message, documentId = null, options = {}) => {
   if (!message || typeof message !== 'string' || !message.trim()) {
@@ -28,76 +16,27 @@ export const processChat = async (message, documentId = null, options = {}) => {
     throw err;
   }
 
-  // 1. Build Base System Prompt (Preserving Tutor Persona)
-  let systemContent = getTutorSystemPrompt();
+  const userId = options.userId || options.user?._id || 'anonymous';
+  const topK = options.topK || 5;
+  const mode = options.mode || null;
+  const similarityThreshold = options.similarityThreshold !== undefined ? options.similarityThreshold : null;
 
-  // 2. Retrieve Document Context & Append Document Instructions if Document Attached
-  let documentContextBlock = '';
-  if (documentId) {
-    // Append document grounding instructions to system prompt without replacing tutor persona
-    systemContent += getDocumentSystemInstructions();
-
-    try {
-      const contextData = await retrieveDocumentContext(documentId, message);
-      if (contextData) {
-        documentContextBlock = formatDocumentContext(contextData);
-      }
-    } catch (err) {
-      console.error(`Error loading document context for ID ${documentId}:`, err.message);
-      const error = new Error(`Failed to load document context: ${err.message}`);
-      error.status = err.status || 500;
-      throw error;
-    }
-  }
-
-  // 3. Assemble Messages Array following Conversation Context order:
-  //    System Prompt -> Conversation History -> Current Message (+ Document Context)
-  const messages = [
-    {
-      role: 'system',
-      content: systemContent,
-    },
-  ];
-
-  // Append Conversation History (if passed in options)
-  if (Array.isArray(options.history) && options.history.length > 0) {
-    for (const item of options.history) {
-      if (item && item.role && item.content) {
-        messages.push({
-          role: item.role,
-          content: item.content,
-        });
-      }
-    }
-  }
-
-  // Build Final User Message (with retrieved document context if present)
-  let finalUserContent = message.trim();
-  if (documentContextBlock) {
-    finalUserContent = `${documentContextBlock}\n\nUser Question:\n${finalUserContent}`;
-  }
-
-  messages.push({
-    role: 'user',
-    content: finalUserContent,
-  });
-
-  // 4. Call OpenRouter Provider
   try {
-    const data = await generateCompletion(messages, options.model);
+    const ragResult = await queryRagService(message.trim(), userId, topK, mode, similarityThreshold);
+    const sources = ragResult.sources || [];
+    const resolvedMode = ragResult.mode || (sources.length > 0 ? 'rag' : 'general');
 
-    const textResponse = data?.choices?.[0]?.message?.content;
-    if (!textResponse) {
-      const err = new Error('No content returned from AI provider.');
-      err.status = 502;
-      throw err;
-    }
-
-    return textResponse;
+    return {
+      answer: ragResult.answer || 'The information is not available in the uploaded documents.',
+      sources,
+      mode: resolvedMode,
+      query: ragResult.query,
+      user_id: ragResult.user_id,
+    };
   } catch (err) {
-    if (!err.status) {
-      err.status = 500;
-    }
-    throw err;
+    console.error('Error in processChat delegating to RAG service:', err.message);
+    const error = new Error(`RAG query failed: ${err.message}`);
+    error.status = err.status || 500;
+    throw error;
   }
 };

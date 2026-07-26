@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import api from '../services/api';
 import { getAvatarUrl } from '../context/AuthContext';
 import ConversationViewerModal from '../components/admin/ConversationViewerModal';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 export default function AdminChats() {
   const [conversations, setConversations] = useState([]);
@@ -11,6 +12,9 @@ export default function AdminChats() {
   const [filter, setFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   const [viewConversation, setViewConversation] = useState(null);
+
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchChats = async () => {
     setIsLoading(true);
@@ -46,19 +50,24 @@ export default function AdminChats() {
     }
   };
 
-  const handleDelete = async (conversationId, title) => {
-    if (!window.confirm(`Are you sure you want to delete "${title}" and all its messages?`)) {
-      return;
-    }
+  const requestDelete = (conversationId, title) => {
+    setDeleteTarget({ id: conversationId, title });
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
     try {
-      const res = await api.delete(`/admin/chats/${conversationId}`);
+      const res = await api.delete(`/admin/chats/${deleteTarget.id}`);
       if (res.data?.success) {
-        toast.success(`Deleted "${title}" successfully`);
-        setConversations((prev) => prev.filter((c) => c._id !== conversationId));
+        toast.success(`Deleted "${deleteTarget.title}" successfully`);
+        setConversations((prev) => prev.filter((c) => c._id !== deleteTarget.id));
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete conversation');
+    } finally {
+      setIsDeleting(false);
+      setDeleteTarget(null);
     }
   };
 
@@ -180,7 +189,7 @@ export default function AdminChats() {
                           <span>View</span>
                         </button>
                         <button
-                          onClick={() => handleDelete(c._id, c.title)}
+                          onClick={() => requestDelete(c._id, c.title)}
                           className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950 transition-all"
                           title="Delete Conversation"
                         >
@@ -200,6 +209,19 @@ export default function AdminChats() {
       <ConversationViewerModal
         conversation={viewConversation}
         onClose={() => setViewConversation(null)}
+      />
+
+      {/* Shared Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => !isDeleting && setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete AI Conversation"
+        description="Are you sure you want to delete this conversation and all its messages? This action cannot be undone."
+        itemName={deleteTarget?.title}
+        confirmText="Delete Conversation"
+        variant="danger"
+        isLoading={isDeleting}
       />
     </div>
   );

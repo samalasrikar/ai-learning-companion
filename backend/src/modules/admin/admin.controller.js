@@ -162,3 +162,56 @@ export const globalSearch = asyncHandler(async (req, res) => {
   const results = await globalSearchService(q);
   res.status(200).json({ success: true, results });
 });
+
+// ──────────────────────────────────────────────
+// Admin RAG Management Handlers
+// ──────────────────────────────────────────────
+import {
+  getRagStatsService,
+  getRagDebugInfoService,
+  reindexDocumentRagService,
+  deleteDocumentVectorsRagService,
+  rebuildVectorStoreRagService,
+} from '../../services/ragClient.service.js';
+
+export const getAdminRagStats = asyncHandler(async (req, res) => {
+  const stats = await getRagStatsService();
+  res.status(200).json({
+    success: true,
+    ...stats,
+  });
+});
+
+export const getAdminRagDebugInfo = asyncHandler(async (req, res) => {
+  const info = await getRagDebugInfoService();
+  res.status(200).json({
+    success: true,
+    ...info,
+  });
+});
+
+export const reindexAdminDocument = asyncHandler(async (req, res) => {
+  const { documentId } = req.params;
+  const result = await reindexDocumentRagService(documentId);
+  res.status(200).json({
+    success: true,
+    ...result,
+  });
+});
+
+export const deleteAdminDocumentVectors = asyncHandler(async (req, res) => {
+  const { documentId } = req.params;
+  const result = await deleteDocumentVectorsRagService(documentId);
+  res.status(200).json({
+    success: true,
+    ...result,
+  });
+});
+
+export const rebuildAdminVectorStore = asyncHandler(async (req, res) => {
+  const result = await rebuildVectorStoreRagService();
+  res.status(200).json({
+    success: true,
+    ...result,
+  });
+});
