@@ -1,7 +1,7 @@
 import fs from 'fs';
 import Document from './document.model.js';
 import { extractPdfData } from './pdf.service.js';
-import { forwardDocumentToRagService } from '../../services/ragClient.service.js';
+import { forwardDocumentToRagService, deleteDocumentVectorsRagService } from '../../services/ragClient.service.js';
 
 /**
  * Register document upload metadata and extract its text content to MongoDB,
@@ -96,3 +96,59 @@ export const getDocumentText = async (documentId) => {
   }
   return document.extractedText;
 };
+
+/**
+ * Delete a document by ID and clean up physical file, RAG vectors, and DB record.
+ * @param {string} documentId - MongoDB Document ObjectId string.
+ * @param {string} [userId] - Optional uploader user ID.
+ */
+export const deleteDocumentService = async (documentId, userId) => {
+  const document = await Document.findById(documentId);
+  if (!document) {
+    const err = new Error('Document not found');
+    err.status = 404;
+    throw err;
+  }
+
+  // 1. Delete physical PDF file from uploads directory if exists
+  if (document.path && fs.existsSync(document.path)) {
+    try {
+      fs.unlinkSync(document.path);
+    } catch (unlinkErr) {
+      console.error('[DELETE ERROR] Failed to delete file on disk:', unlinkErr);
+    }
+  }
+
+  // 2. Delete vector embeddings from RAG service / Chroma Cloud
+  try {
+    await deleteDocumentVectorsRagService(documentId);
+  } catch (ragErr) {
+    console.error(`[DELETE ERROR] Failed to delete vectors for doc ${documentId}:`, ragErr.message);
+  }
+
+  // 3. Delete metadata record from MongoDB
+  await Document.findByIdAndDelete(documentId);
+  return document;
+};
+
+/**
+ * Fetch a document by ID and verify its physical file exists on disk.
+ * @param {string} documentId - MongoDB Document ObjectId string.
+ * @returns {Promise<Object>} Document model instance.
+ */
+export const getDocumentByIdService = async (documentId) => {
+  const document = await Document.findById(documentId);
+  if (!document) {
+    const err = new Error('Document not found');
+    err.status = 404;
+    throw err;
+  }
+  if (!document.path || !fs.existsSync(document.path)) {
+    const err = new Error('File not found on disk');
+    err.status = 404;
+    throw err;
+  }
+  return document;
+};
+
+

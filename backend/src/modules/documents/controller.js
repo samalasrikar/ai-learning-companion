@@ -1,5 +1,11 @@
 import asyncHandler from 'express-async-handler';
-import { registerDocument, getAllDocumentsService } from './service.js';
+import path from 'path';
+import {
+  registerDocument,
+  getAllDocumentsService,
+  deleteDocumentService,
+  getDocumentByIdService,
+} from './service.js';
 import { queryRagService } from '../../services/ragClient.service.js';
 
 /**
@@ -78,3 +84,46 @@ export const queryDocumentController = asyncHandler(async (req, res) => {
     mode: ragResult.mode || 'rag',
   });
 });
+
+/**
+ * Deletes a document by ID.
+ * @route DELETE /api/documents/:id
+ */
+export const deleteDocumentController = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user ? req.user._id : null;
+  await deleteDocumentService(id, userId);
+  res.status(200).json({
+    success: true,
+    message: 'Document deleted successfully',
+  });
+});
+
+/**
+ * Streams document PDF for inline viewing in browser.
+ * @route GET /api/documents/:id/view
+ */
+export const viewDocumentController = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const document = await getDocumentByIdService(id);
+  const absolutePath = path.resolve(document.path);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader(
+    'Content-Disposition',
+    `inline; filename="${encodeURIComponent(document.originalName)}"`
+  );
+  res.sendFile(absolutePath);
+});
+
+/**
+ * Downloads original document PDF attachment.
+ * @route GET /api/documents/:id/download
+ */
+export const downloadDocumentController = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const document = await getDocumentByIdService(id);
+  const absolutePath = path.resolve(document.path);
+  res.download(absolutePath, document.originalName);
+});
+
+

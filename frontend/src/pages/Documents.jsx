@@ -5,7 +5,9 @@ import { toast } from 'sonner';
 import DocumentUploadDropzone from '../components/documents/DocumentUploadDropzone';
 import DocumentAiPanel from '../components/documents/DocumentAiPanel';
 import DocumentGrid from '../components/documents/DocumentGrid';
-import { uploadDocument } from '../services/document.service';
+import DeleteDocumentDialog from '../components/documents/DeleteDocumentDialog';
+import DocumentViewerDialog from '../components/documents/DocumentViewerDialog';
+import { uploadDocument, downloadDocumentFile } from '../services/document.service';
 
 export default function Documents() {
   // Load initial list from localStorage for cross-page persistence
@@ -13,12 +15,18 @@ export default function Documents() {
     const stored = localStorage.getItem('uploaded_documents');
     return stored ? JSON.parse(stored) : [];
   });
-  
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  
+
+  const [docToDelete, setDocToDelete] = useState(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const [viewingDoc, setViewingDoc] = useState(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
+
   const fileInputRef = useRef(null);
 
   const handleBrowseClick = () => {
@@ -70,7 +78,7 @@ export default function Documents() {
     e.preventDefault();
     setDragActive(false);
     if (uploading) return;
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       validateAndSelectFile(e.dataTransfer.files[0]);
     }
@@ -102,7 +110,7 @@ export default function Documents() {
           size: `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB`,
           date: 'Uploaded just now',
         };
-        
+
         // Update state and write to localStorage
         setDocuments((prev) => {
           const updated = [newDoc, ...prev];
@@ -125,13 +133,44 @@ export default function Documents() {
     }
   };
 
-  const handleDelete = (docToDelete) => {
+  const requestDelete = (doc) => {
+    setDocToDelete(doc);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDocumentDeletedSuccess = (deletedDoc) => {
     setDocuments((prev) => {
-      const updated = prev.filter((doc) => doc.id !== docToDelete.id);
+      const updated = prev.filter((doc) => doc.id !== deletedDoc.id && doc.id !== deletedDoc._id);
       localStorage.setItem('uploaded_documents', JSON.stringify(updated));
       return updated;
     });
-    toast.success('Document deleted');
+    setDocToDelete(null);
+    setIsDeleteDialogOpen(false);
+  };
+
+  const handleViewContent = (doc) => {
+    setViewingDoc(doc);
+    setIsViewerOpen(true);
+  };
+
+  const handleDownload = async (doc) => {
+    const docName = doc.name || doc.originalName || 'document.pdf';
+    const docId = doc.id || doc._id;
+
+    if (!docId) {
+      toast.error('Document ID missing for download');
+      return;
+    }
+
+    try {
+      await downloadDocumentFile(docId, docName);
+      toast.success('Download started.');
+    } catch (err) {
+      console.error('Download failure:', err);
+      toast.error('Download failed', {
+        description: err.response?.data?.message || err.message || 'Server error occurred during download.',
+      });
+    }
   };
 
   const handleAnalyze = (doc) => {
@@ -192,9 +231,33 @@ export default function Documents() {
       {/* Uploaded Documents Grid Component */}
       <DocumentGrid
         documents={documents}
-        onDelete={handleDelete}
+        onDelete={requestDelete}
         onAnalyze={handleAnalyze}
+        onViewContent={handleViewContent}
+        onDownload={handleDownload}
         onBrowseClick={handleBrowseClick}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteDocumentDialog
+        isOpen={isDeleteDialogOpen}
+        document={docToDelete}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setDocToDelete(null);
+        }}
+        onSuccess={handleDocumentDeletedSuccess}
+      />
+
+      {/* Document PDF Viewer Dialog */}
+      <DocumentViewerDialog
+        isOpen={isViewerOpen}
+        document={viewingDoc}
+        onClose={() => {
+          setIsViewerOpen(false);
+          setViewingDoc(null);
+        }}
+        onDownload={handleDownload}
       />
     </div>
   );

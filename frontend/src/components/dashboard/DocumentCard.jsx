@@ -1,15 +1,16 @@
 import React from 'react';
-import { FileText, MoreVertical, Trash2, Download, Eye, Sparkles } from 'lucide-react';
+import { FileText, Sparkles } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import DocumentActionsMenu from '@/components/documents/DocumentActionsMenu';
 
-export default function DocumentCard({ doc, onAnalyze, onDelete }) {
+export default function DocumentCard({
+  doc,
+  onAnalyze,
+  onViewContent,
+  onDownload,
+  onDelete,
+}) {
   const { name, size, date } = doc;
 
   return (
@@ -35,36 +36,18 @@ export default function DocumentCard({ doc, onAnalyze, onDelete }) {
           <Button
             size="sm"
             onClick={() => onAnalyze?.(doc)}
-            className="hidden sm:flex items-center gap-1 text-[10px] font-bold h-7 px-2.5 bg-primary/10 hover:bg-primary/20 text-primary border-none shadow-none rounded-lg"
+            className="hidden sm:flex items-center gap-1 text-[10px] font-bold h-7 px-2.5 bg-primary/10 hover:bg-primary/20 text-primary border-none shadow-none rounded-lg cursor-pointer transition-colors"
           >
             <Sparkles className="h-3 w-3" />
             <span>Analyze</span>
           </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground rounded-lg">
-                <MoreVertical className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="border-border/40 text-xs">
-              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer text-xs">
-                <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>View Content</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer text-xs">
-                <Download className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>Download File</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => onDelete?.(doc)}
-                className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer text-xs"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                <span>Delete</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <DocumentActionsMenu
+            doc={doc}
+            onViewContent={onViewContent}
+            onDownload={onDownload}
+            onDelete={onDelete}
+          />
         </div>
       </CardContent>
     </Card>

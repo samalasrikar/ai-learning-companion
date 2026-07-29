@@ -24,3 +24,14 @@ export const uploadDocument = async (file, onProgress) => {
 
   return response.data;
 };
+
+/**
+ * Deletes a document by ID.
+ * @param {string} documentId - The ID of the document to delete.
+ * @returns {Promise<{success: boolean, message: string}>} Response payload.
+ */
+export const deleteDocument = async (documentId) => {
+  const response = await api.delete(`/documents/${documentId}`);
+  return response.data;
+};
+
