@@ -4,7 +4,6 @@ import {
   MessageSquare,
   FileText,
   Award,
-  Milestone,
   ArrowRight,
   TrendingUp,
   Flame,
@@ -34,7 +33,7 @@ export default function Dashboard() {
           </p>
         </div>
         <Button
-          onClick={() => navigate('/roadmap')}
+          onClick={() => navigate('/student/chat')}
           size="sm"
           className="bg-primary hover:bg-primary/95 text-primary-foreground font-bold px-4 py-2 h-9 rounded-lg shadow-md shadow-primary/10 shrink-0 transition-all flex items-center gap-1.5 group relative z-10"
         >
@@ -73,14 +72,6 @@ export default function Dashboard() {
               to="/quiz"
               iconBg="bg-tertiary-container/10"
               iconColor="text-tertiary-container"
-            />
-            <FeatureCard
-              title="Learning Roadmap"
-              description="View your active milestones and structured paths to master subjects."
-              icon={Milestone}
-              to="/roadmap"
-              iconBg="bg-primary/10"
-              iconColor="text-primary"
             />
           </div>
         </div>
@@ -154,9 +145,9 @@ export default function Dashboard() {
           <EmptyState
             icon={AlertCircle}
             title="No active courses"
-            description="Create a learning roadmap to partition your subjects into study modules."
-            actionText="Create Roadmap"
-            onAction={() => navigate('/roadmap')}
+            description="Start chatting with the AI tutor or upload study documents to get started."
+            actionText="Start Learning"
+            onAction={() => navigate('/student/chat')}
           />
         )}
       </section>

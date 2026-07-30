@@ -54,6 +54,10 @@ class Settings:
     def CHROMA_DATABASE(self) -> str:
         return os.getenv("CHROMA_DATABASE", "")
 
+    @property
+    def CHROMA_HOST(self) -> str:
+        return os.getenv("CHROMA_HOST", "api.trychroma.com")
+
     # Storage and Model Configurations
     @property
     def UPLOAD_DIR(self) -> str:

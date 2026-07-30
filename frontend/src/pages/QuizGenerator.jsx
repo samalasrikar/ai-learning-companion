@@ -12,7 +12,7 @@ import {
   Play,
   ArrowRight,
   History,
-  RotateCcw,
+  Hash,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,18 +20,37 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { generateQuiz, getQuizHistory } from '../services/quiz.service';
 
+const PRESET_COUNTS = [5, 10, 20];
+const CUSTOM_SENTINEL = 'custom';
+const MIN_QUESTIONS = 1;
+const MAX_QUESTIONS = 50;
+
 export default function QuizGenerator() {
   const navigate = useNavigate();
 
   const [topic, setTopic] = useState('DevOps & Container Orchestration');
   const [difficulty, setDifficulty] = useState('Medium');
-  const [questionCount, setQuestionCount] = useState(10);
+
+  // "selected" is one of the PRESET_COUNTS or CUSTOM_SENTINEL
+  const [selectedPreset, setSelectedPreset] = useState(10);
+  const [customCount, setCustomCount] = useState('');
+  const [customCountError, setCustomCountError] = useState('');
+
   const [selectedSourceDoc, setSelectedSourceDoc] = useState('All Indexed Documents');
   const [questionType, setQuestionType] = useState('Multiple Choice');
   const [isGenerating, setIsGenerating] = useState(false);
 
   const [uploadedDocs, setUploadedDocs] = useState([]);
   const [history, setHistory] = useState([]);
+
+  // Derived: the actual integer count to use
+  const resolvedQuestionCount = (() => {
+    if (selectedPreset === CUSTOM_SENTINEL) {
+      const parsed = parseInt(customCount, 10);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    return selectedPreset;
+  })();
 
   useEffect(() => {
     // Load uploaded documents from localStorage
@@ -47,29 +66,93 @@ export default function QuizGenerator() {
     setHistory(getQuizHistory());
   }, []);
 
-  const handleGenerate = async () => {
+  const handlePresetSelect = (preset) => {
+    setSelectedPreset(preset);
+    if (preset !== CUSTOM_SENTINEL) {
+      setCustomCount('');
+      setCustomCountError('');
+    }
+  };
+
+  const handleCustomCountChange = (e) => {
+    const raw = e.target.value;
+    setCustomCount(raw);
+
+    const parsed = parseInt(raw, 10);
+    if (!raw.trim()) {
+      setCustomCountError('Please enter a number.');
+    } else if (isNaN(parsed) || !Number.isInteger(parsed)) {
+      setCustomCountError('Must be a whole number.');
+    } else if (parsed < MIN_QUESTIONS) {
+      setCustomCountError(`Minimum is ${MIN_QUESTIONS} question.`);
+    } else if (parsed > MAX_QUESTIONS) {
+      setCustomCountError(`Maximum is ${MAX_QUESTIONS} questions.`);
+    } else {
+      setCustomCountError('');
+    }
+  };
+
+  const validateBeforeGenerate = () => {
     if (!topic.trim()) {
       toast.error('Please enter a topic or subject.');
-      return;
+      return false;
     }
+    if (selectedPreset === CUSTOM_SENTINEL) {
+      const parsed = parseInt(customCount, 10);
+      if (!customCount.trim() || isNaN(parsed)) {
+        setCustomCountError('Please enter a valid number of questions.');
+        toast.error('Enter a valid custom question count.');
+        return false;
+      }
+      if (parsed < MIN_QUESTIONS || parsed > MAX_QUESTIONS) {
+        setCustomCountError(`Must be between ${MIN_QUESTIONS} and ${MAX_QUESTIONS}.`);
+        toast.error(`Question count must be between ${MIN_QUESTIONS} and ${MAX_QUESTIONS}.`);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleGenerate = async () => {
+    if (!validateBeforeGenerate()) return;
+
+    const finalCount = resolvedQuestionCount;
+
+    // DEV LOG
+    console.log('[QuizGenerator] Selected Question Count:', finalCount);
+    console.log('[QuizGenerator] API Payload:', {
+      topic: topic.trim(),
+      difficulty,
+      questionCount: finalCount,
+      questionType,
+      sourceDoc: selectedSourceDoc,
+    });
 
     setIsGenerating(true);
-    const toastId = toast.loading('Generating custom AI quiz questions...');
+    const toastId = toast.loading(`Generating ${finalCount} quiz questions...`);
 
     try {
       const quiz = await generateQuiz({
         topic: topic.trim(),
         difficulty,
-        questionCount,
+        questionCount: finalCount,
+        questionType,
         sourceDoc: selectedSourceDoc,
       });
 
-      toast.success('Quiz generated successfully!', { id: toastId });
+      // UI Validation: verify the generated count matches what was requested
+      if (quiz.questions.length !== finalCount) {
+        console.warn(
+          `[QuizGenerator] Count mismatch — requested ${finalCount}, got ${quiz.questions.length}`
+        );
+      }
+
+      toast.success(`Quiz generated! ${quiz.questions.length} questions ready.`, { id: toastId });
       setIsGenerating(false);
       navigate(`/student/quiz/take/${quiz.id}`);
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to generate quiz.', { id: toastId });
+      console.error('[QuizGenerator] Generation error:', err);
+      toast.error('Failed to generate quiz. Please try again.', { id: toastId });
       setIsGenerating(false);
     }
   };
@@ -96,7 +179,7 @@ export default function QuizGenerator() {
               className="h-9 text-xs font-semibold px-3.5 rounded-xl border-border/60 hover:bg-muted text-foreground flex items-center gap-2"
             >
               <BarChart3 className="h-4 w-4 text-primary" />
-              <span>History & Analytics</span>
+              <span>History &amp; Analytics</span>
             </Button>
           </Link>
         </div>
@@ -200,28 +283,85 @@ export default function QuizGenerator() {
                 </div>
               </div>
 
-              {/* 5. Number of Questions Slider */}
+              {/* 5. Number of Questions — Preset Pills + Custom Input */}
               <div className="space-y-3 pt-2">
                 <div className="flex justify-between items-center">
                   <label className="text-xs font-bold text-foreground">
                     Number of Questions
                   </label>
                   <span className="text-xs font-extrabold text-primary bg-primary/10 px-2.5 py-1 rounded-lg">
-                    {questionCount} Questions
+                    {selectedPreset === CUSTOM_SENTINEL
+                      ? resolvedQuestionCount > 0
+                        ? `${resolvedQuestionCount} Questions`
+                        : 'Custom'
+                      : `${resolvedQuestionCount} Questions`}
                   </span>
                 </div>
-                <input
-                  type="range"
-                  min="5"
-                  max="30"
-                  step="5"
-                  value={questionCount}
-                  onChange={(e) => setQuestionCount(parseInt(e.target.value, 10))}
-                  className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary focus:outline-none"
-                />
+
+                {/* Preset Pill Row */}
+                <div className="grid grid-cols-4 gap-2">
+                  {PRESET_COUNTS.map((count) => {
+                    const isSelected = selectedPreset === count;
+                    return (
+                      <button
+                        key={count}
+                        type="button"
+                        onClick={() => handlePresetSelect(count)}
+                        className={`h-10 rounded-xl text-xs font-bold transition-all border ${
+                          isSelected
+                            ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                            : 'bg-card border-border/60 hover:bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        {count}
+                      </button>
+                    );
+                  })}
+                  {/* Custom Pill */}
+                  <button
+                    type="button"
+                    onClick={() => handlePresetSelect(CUSTOM_SENTINEL)}
+                    className={`h-10 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-1 ${
+                      selectedPreset === CUSTOM_SENTINEL
+                        ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                        : 'bg-card border-border/60 hover:bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    <Hash className="h-3 w-3" />
+                    Custom
+                  </button>
+                </div>
+
+                {/* Custom Number Input — visible only when Custom is selected */}
+                {selectedPreset === CUSTOM_SENTINEL && (
+                  <div className="space-y-1.5 pt-1">
+                    <Input
+                      type="number"
+                      min={MIN_QUESTIONS}
+                      max={MAX_QUESTIONS}
+                      value={customCount}
+                      onChange={handleCustomCountChange}
+                      placeholder={`Enter 1–${MAX_QUESTIONS} questions`}
+                      className={`bg-muted/30 border-border/50 focus-visible:ring-1 focus-visible:ring-primary rounded-xl h-10 text-xs font-medium ${
+                        customCountError ? 'border-destructive focus-visible:ring-destructive' : ''
+                      }`}
+                      autoFocus
+                    />
+                    {customCountError && (
+                      <p className="text-[11px] text-destructive font-medium">{customCountError}</p>
+                    )}
+                    {!customCountError && customCount && (
+                      <p className="text-[11px] text-muted-foreground">
+                        Will generate exactly <span className="font-bold text-primary">{resolvedQuestionCount}</span> questions.
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex justify-between text-[10px] font-bold text-muted-foreground">
-                  <span>5 Questions (Quick Test)</span>
-                  <span>30 Questions (Full Assessment)</span>
+                  <span>5 — Quick Test</span>
+                  <span>20 — Standard Assessment</span>
+                  <span>Custom — Any count</span>
                 </div>
               </div>
 
@@ -229,11 +369,19 @@ export default function QuizGenerator() {
               <div className="pt-3">
                 <Button
                   onClick={handleGenerate}
-                  disabled={isGenerating || !topic.trim()}
+                  disabled={
+                    isGenerating ||
+                    !topic.trim() ||
+                    (selectedPreset === CUSTOM_SENTINEL && (!!customCountError || !customCount.trim()))
+                  }
                   className="w-full bg-primary hover:bg-primary/95 text-primary-foreground font-bold h-11 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 text-xs cursor-pointer active:scale-98 disabled:opacity-50"
                 >
                   <Play className="h-4 w-4 fill-current" />
-                  <span>{isGenerating ? 'Generating Quiz...' : 'Start Assessment Now'}</span>
+                  <span>
+                    {isGenerating
+                      ? 'Generating Quiz...'
+                      : `Generate ${resolvedQuestionCount > 0 ? resolvedQuestionCount : ''} Questions`}
+                  </span>
                 </Button>
               </div>
             </CardContent>
@@ -261,7 +409,19 @@ export default function QuizGenerator() {
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="bg-muted/30 p-2.5 rounded-xl border border-border/30">
                 <span className="text-[10px] text-muted-foreground font-semibold block">Est. Time</span>
-                <span className="font-extrabold text-foreground">{questionCount * 1.5} Mins</span>
+                <span className="font-extrabold text-foreground">
+                  {resolvedQuestionCount > 0 ? `${(resolvedQuestionCount * 1.5).toFixed(1)} Mins` : '—'}
+                </span>
+              </div>
+              <div className="bg-muted/30 p-2.5 rounded-xl border border-border/30">
+                <span className="text-[10px] text-muted-foreground font-semibold block">Questions</span>
+                <span className="font-extrabold text-primary">
+                  {resolvedQuestionCount > 0 ? resolvedQuestionCount : '—'}
+                </span>
+              </div>
+              <div className="bg-muted/30 p-2.5 rounded-xl border border-border/30">
+                <span className="text-[10px] text-muted-foreground font-semibold block">Difficulty</span>
+                <span className="font-extrabold text-foreground">{difficulty}</span>
               </div>
               <div className="bg-muted/30 p-2.5 rounded-xl border border-border/30">
                 <span className="text-[10px] text-muted-foreground font-semibold block">Target Accuracy</span>

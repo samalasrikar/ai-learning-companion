@@ -23,8 +23,6 @@ export default function Header() {
         return 'Documents';
       case '/quiz':
         return 'Quiz Generator';
-      case '/roadmap':
-        return 'Learning Roadmap';
       case '/analytics':
         return 'Analytics';
       default:

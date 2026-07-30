@@ -19,10 +19,38 @@ async def lifespan(app: FastAPI):
     # Startup: Log safe config, initialize Chroma Cloud + preload embedding model
     logger.info("Starting up RAG service...")
     settings.log_startup_config()
-    init_chroma_db()
-    load_embedding_model()
+
+    # ── Chroma Cloud init (non-fatal on startup) ──────────────────────────────
+    # If the API key is invalid/expired the server will still start.
+    # Fix CHROMA_API_KEY in backend/.env then restart to restore full function.
+    try:
+        init_chroma_db()
+    except Exception as chroma_err:
+        logger.error("=" * 60)
+        logger.error("[CHROMA STARTUP ERROR] Could not connect to Chroma Cloud.")
+        logger.error(f"  Reason  : {chroma_err}")
+        logger.error("  Fix     : Your CHROMA_API_KEY is likely expired or invalid.")
+        logger.error("  Steps   :")
+        logger.error("    1. Go to https://trychroma.com and log in.")
+        logger.error("    2. Open your Dashboard → API Keys → Create new key.")
+        logger.error("    3. Also copy your Tenant ID and Database name.")
+        logger.error("    4. Update CHROMA_API_KEY, CHROMA_TENANT, CHROMA_DATABASE")
+        logger.error("       in  backend/.env")
+        logger.error("    5. Restart the RAG service.")
+        logger.error("  NOTE    : RAG service started in DEGRADED mode.")
+        logger.error("            Document indexing and semantic search are unavailable")
+        logger.error("            until a valid Chroma connection is restored.")
+        logger.error("=" * 60)
+
+    # ── Embedding model preload ───────────────────────────────────────────────
+    try:
+        load_embedding_model()
+    except Exception as embed_err:
+        logger.error(f"[EMBEDDING STARTUP ERROR] Failed to load embedding model: {embed_err}")
+
     yield
     logger.info("Shutting down RAG service...")
+
 
 
 app = FastAPI(

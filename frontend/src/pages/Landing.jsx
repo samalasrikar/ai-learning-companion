@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Brain, Sparkles, MessageSquareText, FileText, HelpCircle, Map, ArrowRight } from 'lucide-react';
+import { Brain, Sparkles, MessageSquareText, FileText, HelpCircle, ArrowRight } from 'lucide-react';
 import { APP_NAME, APP_TAGLINE } from '@/constants/app.constants';
 
 export default function Landing() {
@@ -42,7 +42,7 @@ export default function Landing() {
             Learn Smarter with {APP_NAME} <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">{APP_TAGLINE}</span>
           </h1>
           <p className="text-lg sm:text-xl text-slate-400 max-w-3xl mx-auto mb-10 leading-relaxed">
-            Upload course materials, ask instant document questions, generate adaptive quizzes, and map step-by-step learning roadmaps in seconds.
+            Upload course materials, ask instant document questions, and generate adaptive quizzes in seconds.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Link to="/student/chat" className="h-12 px-8 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all shadow-xl shadow-blue-600/30 flex items-center gap-3">
@@ -100,16 +100,6 @@ export default function Landing() {
             </p>
           </Link>
 
-          {/* Card 4 */}
-          <Link to="/student/roadmap" className="bg-slate-800/50 border border-slate-700/60 rounded-2xl p-6 hover:border-blue-500/50 transition-all hover:-translate-y-1 block">
-            <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-5">
-              <Map className="w-6 h-6" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">Learning Roadmaps</h3>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              Generate structured, step-by-step learning roadmaps with clear skill milestones.
-            </p>
-          </Link>
         </div>
       </section>
 

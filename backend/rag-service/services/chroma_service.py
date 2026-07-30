@@ -45,6 +45,7 @@ def init_chroma_db(use_ephemeral: bool = False):
     api_key = settings.CHROMA_API_KEY
     tenant = settings.CHROMA_TENANT
     database = settings.CHROMA_DATABASE
+    host = settings.CHROMA_HOST
 
     if not api_key:
         err_msg = "CHROMA_API_KEY is not configured in backend/.env"
@@ -63,7 +64,8 @@ def init_chroma_db(use_ephemeral: bool = False):
 
     try:
         logger.info(
-            f"[CHROMA] Initializing Chroma CloudClient (tenant='{tenant}', database='{database}')"
+            f"[CHROMA] Initializing Chroma CloudClient "
+            f"(host='{host}', tenant='{tenant}', database='{database}')"
         )
 
         _chroma_client = chromadb.CloudClient(
@@ -98,8 +100,42 @@ def init_chroma_db(use_ephemeral: bool = False):
         return _chroma_client, _documents_collection
 
     except Exception as e:
-        logger.error(f"[CHROMA ERROR] Failed to connect to Chroma Cloud: {str(e)}")
-        raise RuntimeError(f"Chroma Cloud connection failed: {str(e)}")
+        raw_msg = str(e)
+
+        # Detect the specific "connection forcibly closed / auth rejected" pattern
+        is_auth_error = any(keyword in raw_msg.lower() for keyword in [
+            "could not connect", "10054", "connecterror", "forcibly closed",
+            "connection refused", "ssl", "unauthorized", "401", "403",
+        ])
+
+        logger.error("=" * 60)
+        logger.error("[CHROMA ERROR] Failed to connect to Chroma Cloud")
+        logger.error(f"  Error   : {raw_msg}")
+
+        if is_auth_error:
+            logger.error("  Cause   : CHROMA_API_KEY is expired, invalid, or your Chroma")
+            logger.error("            Cloud account/plan is inactive.")
+            logger.error("  Fix     :")
+            logger.error("    1. Visit  https://trychroma.com  and sign in.")
+            logger.error("    2. Go to  Dashboard → Settings → API Keys.")
+            logger.error("    3. Delete the old key and create a new one.")
+            logger.error("    4. Copy your new API key, Tenant ID, and Database name.")
+            logger.error("    5. Open   backend/.env  and update:")
+            logger.error("         CHROMA_API_KEY=<your-new-key>")
+            logger.error("         CHROMA_TENANT=<your-tenant-id>")
+            logger.error("         CHROMA_DATABASE=<your-database-name>")
+            logger.error("    6. Save the file, then restart the RAG service.")
+        else:
+            logger.error("  Cause   : Unexpected error during Chroma initialization.")
+            logger.error("  Check   : Network connectivity and Chroma Cloud status at")
+            logger.error("            https://status.trychroma.com")
+
+        logger.error("=" * 60)
+        raise RuntimeError(
+            f"Chroma Cloud connection failed — "
+            f"{'API key likely expired/invalid. See logs for fix steps.' if is_auth_error else raw_msg}"
+        )
+
 
 
 def get_chroma_client():

@@ -16,7 +16,6 @@ import QuizGenerator from '../pages/QuizGenerator';
 import QuizInterface from '../pages/QuizInterface';
 import QuizEvaluation from '../pages/QuizEvaluation';
 import QuizHistoryAnalytics from '../pages/QuizHistoryAnalytics';
-import LearningRoadmap from '../pages/LearningRoadmap';
 import Analytics from '../pages/Analytics';
 import AdminDashboard from '../pages/AdminDashboard';
 import AdminStudents from '../pages/AdminStudents';
@@ -64,7 +63,6 @@ export default function AppRoutes() {
             <Route path="/student/quiz/take/:quizId" element={<QuizInterface />} />
             <Route path="/student/quiz/results/:quizId" element={<QuizEvaluation />} />
             <Route path="/student/quiz/history" element={<QuizHistoryAnalytics />} />
-            <Route path="/student/roadmap" element={<LearningRoadmap />} />
             <Route path="/student/analytics" element={<Analytics />} />
             <Route path="/profile" element={<Profile />} />
 
@@ -72,7 +70,6 @@ export default function AppRoutes() {
             <Route path="/chat" element={<Navigate to="/student/chat" replace />} />
             <Route path="/documents" element={<Navigate to="/student/documents" replace />} />
             <Route path="/quiz" element={<Navigate to="/student/quiz" replace />} />
-            <Route path="/roadmap" element={<Navigate to="/student/roadmap" replace />} />
             <Route path="/analytics" element={<Navigate to="/student/analytics" replace />} />
           </Route>
         </Route>
