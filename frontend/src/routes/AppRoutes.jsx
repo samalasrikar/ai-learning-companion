@@ -59,14 +59,12 @@ export default function AppRoutes() {
             <Route path="/student/quiz/take/:quizId" element={<QuizInterface />} />
             <Route path="/student/quiz/results/:quizId" element={<QuizEvaluation />} />
             <Route path="/student/quiz/history" element={<QuizHistoryAnalytics />} />
-            <Route path="/student/analytics" element={<Navigate to="/student/quiz/history" replace />} />
             <Route path="/profile" element={<Profile />} />
 
             {/* Direct aliases */}
             <Route path="/chat" element={<Navigate to="/student/chat" replace />} />
             <Route path="/documents" element={<Navigate to="/student/documents" replace />} />
             <Route path="/quiz" element={<Navigate to="/student/quiz" replace />} />
-            <Route path="/analytics" element={<Navigate to="/student/quiz/history" replace />} />
           </Route>
         </Route>
 
