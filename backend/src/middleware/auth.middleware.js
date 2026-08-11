@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/user.model.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_12345';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 /**
  * Middleware verifying JWT from HttpOnly cookie or Bearer Authorization header.

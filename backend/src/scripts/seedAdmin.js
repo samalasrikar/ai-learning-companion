@@ -2,6 +2,7 @@ import User from '../models/user.model.js';
 
 /**
  * Seeds the single Admin account if no Admin currently exists.
+ * Requires ADMIN_EMAIL and ADMIN_PASSWORD to be set in environment variables.
  */
 export const seedAdminAccount = async () => {
   try {
@@ -11,8 +12,14 @@ export const seedAdminAccount = async () => {
       return;
     }
 
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@jarvis.edu';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'Admin123!Password';
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (!adminEmail || !adminPassword) {
+      throw new Error(
+        'ADMIN_EMAIL and ADMIN_PASSWORD must be set in environment variables before seeding the admin account.'
+      );
+    }
 
     const adminUser = await User.create({
       firstName: 'System',
