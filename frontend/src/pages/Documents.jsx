@@ -3,7 +3,6 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import DocumentUploadDropzone from '../components/documents/DocumentUploadDropzone';
-import DocumentAiPanel from '../components/documents/DocumentAiPanel';
 import DocumentGrid from '../components/documents/DocumentGrid';
 import DeleteDocumentDialog from '../components/documents/DeleteDocumentDialog';
 import DocumentViewerDialog from '../components/documents/DocumentViewerDialog';
@@ -202,30 +201,22 @@ export default function Documents() {
         </Button>
       </section>
 
-      {/* Grid Layout: Upload Area & AI Summary Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Drag & Drop Upload Zone Component */}
-        <div className="lg:col-span-6 h-full">
-          <DocumentUploadDropzone
-            selectedFile={selectedFile}
-            uploading={uploading}
-            uploadProgress={uploadProgress}
-            dragActive={dragActive}
-            fileInputRef={fileInputRef}
-            onBrowseClick={handleBrowseClick}
-            onFileChange={handleFileChange}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClearSelectedFile={() => setSelectedFile(null)}
-            onTriggerUpload={triggerUpload}
-          />
-        </div>
-
-        {/* AI Context Summary Panel Component */}
-        <div className="lg:col-span-6">
-          <DocumentAiPanel />
-        </div>
+      {/* Drag & Drop Upload Zone Component */}
+      <div>
+        <DocumentUploadDropzone
+          selectedFile={selectedFile}
+          uploading={uploading}
+          uploadProgress={uploadProgress}
+          dragActive={dragActive}
+          fileInputRef={fileInputRef}
+          onBrowseClick={handleBrowseClick}
+          onFileChange={handleFileChange}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClearSelectedFile={() => setSelectedFile(null)}
+          onTriggerUpload={triggerUpload}
+        />
       </div>
 
       {/* Uploaded Documents Grid Component */}

@@ -1,11 +1,10 @@
 import fs from 'fs';
 import Document from './document.model.js';
-import { extractPdfData } from './pdf.service.js';
 import { forwardDocumentToRagService, deleteDocumentVectorsRagService } from '../../services/ragClient.service.js';
 
 /**
- * Register document upload metadata and extract its text content to MongoDB,
- * then forward the file and metadata to the FastAPI RAG service.
+ * Register document upload metadata in MongoDB and forward the file
+ * to the Python FastAPI RAG service for PyMuPDF text extraction & Chroma Cloud indexing.
  * @param {Object} file - The file object processed by multer.
  * @param {string} [userId] - Optional User ObjectId string of the uploader.
  * @returns {Promise<Object>} The saved MongoDB Document model with attached RAG processing data.
@@ -17,39 +16,21 @@ export const registerDocument = async (file, userId = null) => {
 
   console.log(`[UPLOAD] Received ${file.originalname} (${file.size} bytes)`);
 
-  let extractedData = null;
-
-  try {
-    // 1. Extract text and page count from the PDF file for local metadata
-    extractedData = await extractPdfData(file.path);
-    console.log(`[UPLOAD] Extracted ${extractedData.pages} pages (${extractedData.text.length} characters)`);
-  } catch (err) {
-    console.error(`[UPLOAD ERROR] PDF extraction failed for ${file.originalname}:`, err.message);
-    if (fs.existsSync(file.path)) {
-      try {
-        fs.unlinkSync(file.path);
-      } catch (unlinkErr) {
-        console.error('[UPLOAD ERROR] Failed to delete file on error cleanup:', unlinkErr);
-      }
-    }
-    throw err;
-  }
-
-  // 2. Store document metadata and extracted text in MongoDB
+  // 1. Store document metadata in MongoDB
   const newDocument = new Document({
     originalName: file.originalname,
     filename: file.filename,
     path: file.path,
     size: file.size,
-    extractedText: extractedData.text,
-    pages: extractedData.pages,
+    extractedText: '',
+    pages: 1,
     uploadedBy: userId || null,
   });
 
   const savedDocument = await newDocument.save();
   console.log(`[UPLOAD] Saved metadata to MongoDB (id=${savedDocument._id})`);
 
-  // 3. Forward the file and metadata to FastAPI RAG /upload endpoint
+  // 2. Forward the file and metadata to FastAPI RAG /upload endpoint for PyMuPDF text extraction & vector indexing
   let ragData = null;
   try {
     console.log(`[RAG] Calling FastAPI /upload endpoint for doc_id=${savedDocument._id}`);
@@ -59,6 +40,10 @@ export const registerDocument = async (file, userId = null) => {
       savedDocument._id,
       userId
     );
+    if (ragData && ragData.total_pages) {
+      savedDocument.pages = ragData.total_pages;
+      await savedDocument.save();
+    }
   } catch (ragErr) {
     console.error(`[RAG ERROR] Document ${savedDocument._id} saved in MongoDB, but RAG indexing failed:`, ragErr.message);
     ragData = {
@@ -94,7 +79,7 @@ export const getDocumentText = async (documentId) => {
   if (!document) {
     throw new Error(`Document context not found for ID: ${documentId}`);
   }
-  return document.extractedText;
+  return document.extractedText || '';
 };
 
 /**
@@ -150,5 +135,3 @@ export const getDocumentByIdService = async (documentId) => {
   }
   return document;
 };
-
-

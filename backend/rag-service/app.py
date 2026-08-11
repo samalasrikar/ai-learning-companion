@@ -69,9 +69,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include router at root and with /documents prefix for compatibility
+# Include router at root
 app.include_router(document_router)
-app.include_router(document_router, prefix="/documents")
 
 
 @app.get("/health")

@@ -1,8 +1,6 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Bell } from 'lucide-react';
-import SearchBar from '../common/SearchBar';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,25 +12,27 @@ export default function Header() {
   const location = useLocation();
 
   const getPageTitle = () => {
-    switch (location.pathname) {
-      case '/':
-        return 'Dashboard';
-      case '/chat':
-        return 'AI Chat';
-      case '/documents':
-        return 'Documents';
-      case '/quiz':
-        return 'Quiz Generator';
-      case '/analytics':
-        return 'Analytics';
-      default:
-        return 'Dashboard';
-    }
+    const path = location.pathname;
+    if (path.startsWith('/admin/rag')) return 'RAG Store Management';
+    if (path.startsWith('/admin/students')) return 'Students';
+    if (path.startsWith('/admin/documents')) return 'Admin Documents';
+    if (path.startsWith('/admin/chats')) return 'AI Chats';
+    if (path.startsWith('/admin/analytics')) return 'System Analytics';
+    if (path === '/admin') return 'Admin Dashboard';
+    if (path.startsWith('/student/chat') || path === '/chat') return 'AI Chat';
+    if (path.startsWith('/student/documents') || path === '/documents') return 'Documents';
+    if (path.startsWith('/student/quiz/history')) return 'Quiz History & Analytics';
+    if (path.startsWith('/student/quiz') || path === '/quiz') return 'Quiz Generator';
+    if (path === '/student') return 'Student Dashboard';
+    if (path === '/profile') return 'Profile Settings';
+    if (path === '/login') return 'Login';
+    if (path === '/register') return 'Register';
+    return 'Dashboard';
   };
 
   return (
     <header className="sticky top-0 z-40 bg-card border-b border-border/40 h-14 flex items-center justify-between px-4 shrink-0 backdrop-blur-md bg-opacity-80">
-      {/* Left side: Sidebar Toggle & Navigation Breadcrumb */}
+      {/* Navigation Breadcrumb */}
       <div className="flex items-center gap-3">
         <SidebarTrigger className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors" />
         <Breadcrumb>
@@ -44,17 +44,6 @@ export default function Header() {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-      </div>
-
-      {/* Right side: Search & Notifications */}
-      <div className="flex items-center gap-4">
-        <div className="hidden md:block w-64">
-          <SearchBar placeholder="Search knowledge..." />
-        </div>
-        <button className="h-8 w-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-full relative transition-colors">
-          <Bell className="h-4.5 w-4.5" />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-destructive rounded-full"></span>
-        </button>
       </div>
     </header>
   );

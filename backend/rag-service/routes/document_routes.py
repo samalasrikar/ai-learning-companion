@@ -42,9 +42,6 @@ class RAGRequest(BaseModel):
 
 
 @router.post("/upload")
-@router.post("/process-pdf")
-@router.post("/documents/upload")
-@router.post("/documents/process-pdf")
 async def process_pdf(
     file: UploadFile = File(...),
     document_id: str = Form(None),
@@ -114,7 +111,6 @@ async def process_pdf(
 
 
 @router.post("/search")
-@router.post("/documents/search")
 async def search_documents(request: QueryRequest):
     """
     Performs semantic vector search against Chroma Cloud 'documents' collection.
@@ -155,11 +151,6 @@ async def search_documents(request: QueryRequest):
 
 
 @router.post("/query")
-@router.post("/rag")
-@router.post("/answer")
-@router.post("/documents/query")
-@router.post("/documents/rag")
-@router.post("/documents/answer")
 async def rag_question_answering(request: RAGRequest):
     """
     Performs Retrieval-Augmented Generation (RAG) using Chroma Cloud context and LLM.
@@ -196,7 +187,6 @@ async def rag_question_answering(request: RAGRequest):
 
 
 @router.get("/debug/chroma")
-@router.get("/documents/debug/chroma")
 async def debug_chroma_endpoint():
     """Debug endpoint returning live runtime inspection data for Chroma Cloud."""
     try:
@@ -210,7 +200,6 @@ async def debug_chroma_endpoint():
 
 
 @router.get("/admin/stats")
-@router.get("/documents/admin/stats")
 async def get_rag_statistics():
     """Returns live RAG management statistics directly from Chroma Cloud."""
     try:
@@ -224,7 +213,6 @@ async def get_rag_statistics():
 
 
 @router.post("/admin/reindex/{document_id}")
-@router.post("/documents/admin/reindex/{document_id}")
 async def reindex_document_endpoint(document_id: str):
     """Deletes vectors for document_id from Chroma Cloud so it can be cleanly re-indexed."""
     try:
@@ -240,7 +228,6 @@ async def reindex_document_endpoint(document_id: str):
 
 
 @router.delete("/admin/documents/{document_id}")
-@router.delete("/documents/admin/documents/{document_id}")
 async def delete_document_vectors_endpoint(document_id: str):
     """Deletes all vector embeddings for specified document_id from Chroma Cloud."""
     try:
@@ -254,7 +241,6 @@ async def delete_document_vectors_endpoint(document_id: str):
 
 
 @router.post("/admin/rebuild-index")
-@router.post("/documents/admin/rebuild-index")
 async def rebuild_vector_store_endpoint():
     """Resets the 'documents' collection in Chroma Cloud."""
     try:
