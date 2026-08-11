@@ -7,7 +7,7 @@ dotenv.config();
 /**
  * Required environment variables for the Express backend.
  */
-const REQUIRED_ENV_VARS = ['MONGO_URI', 'JWT_SECRET'];
+const REQUIRED_ENV_VARS = ['MONGO_URI', 'JWT_SECRET', 'ADMIN_EMAIL', 'ADMIN_PASSWORD'];
 
 /**
  * Mask sensitive string for safe logging.
@@ -39,6 +39,8 @@ export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   MONGO_URI: process.env.MONGO_URI,
   JWT_SECRET: process.env.JWT_SECRET,
+  ADMIN_EMAIL: process.env.ADMIN_EMAIL,
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
   OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || '',
   OPENROUTER_BASE_URL: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
   OPENROUTER_MODEL: process.env.OPENROUTER_MODEL || 'openrouter/free',

@@ -1,4 +1,5 @@
 import User from '../models/user.model.js';
+import { env } from '../config/env.js';
 
 /**
  * Seeds the single Admin account if no Admin currently exists.
@@ -12,14 +13,8 @@ export const seedAdminAccount = async () => {
       return;
     }
 
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const adminPassword = process.env.ADMIN_PASSWORD;
-
-    if (!adminEmail || !adminPassword) {
-      throw new Error(
-        'ADMIN_EMAIL and ADMIN_PASSWORD must be set in environment variables before seeding the admin account.'
-      );
-    }
+    const adminEmail = env.ADMIN_EMAIL;
+    const adminPassword = env.ADMIN_PASSWORD;
 
     const adminUser = await User.create({
       firstName: 'System',
