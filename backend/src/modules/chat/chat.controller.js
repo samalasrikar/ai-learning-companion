@@ -11,7 +11,6 @@ import {
   saveMessageService,
 } from '../../services/message.service.js';
 import { processChat } from '../../ai/services/chat.service.js';
-import { getSettingsService } from '../../services/systemAdmin.service.js';
 import Message from '../../models/message.model.js';
 
 /**
@@ -151,12 +150,11 @@ export const sendMessage = asyncHandler(async (req, res) => {
     }
   }
 
-  // 4. Execute AI RAG query via processChat with system settings
-  const systemSettings = await getSettingsService();
+  // 4. Execute AI RAG query via processChat
   const ragResult = await processChat(message.trim(), documentId, {
     userId: req.user._id,
-    mode: systemSettings?.aiResponseMode || 'hybrid',
-    similarityThreshold: systemSettings?.similarityThreshold ?? 0.75,
+    mode: 'hybrid',
+    similarityThreshold: 0.75,
   });
 
   const responseText = typeof ragResult === 'string' ? ragResult : (ragResult.answer || '');

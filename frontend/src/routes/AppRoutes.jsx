@@ -21,9 +21,7 @@ import AdminDashboard from '../pages/AdminDashboard';
 import AdminStudents from '../pages/AdminStudents';
 import AdminDocuments from '../pages/AdminDocuments';
 import AdminChats from '../pages/AdminChats';
-import Settings from '../pages/Settings';
-import ActivityLogs from '../pages/ActivityLogs';
-import SystemStatus from '../pages/SystemStatus';
+
 
 import AdminRagManagement from '../pages/AdminRagManagement';
 
@@ -47,9 +45,7 @@ export default function AppRoutes() {
             <Route path="/admin/documents" element={<AdminDocuments />} />
             <Route path="/admin/chats" element={<AdminChats />} />
             <Route path="/admin/analytics" element={<Analytics />} />
-            <Route path="/admin/settings" element={<Settings />} />
-            <Route path="/admin/activity-logs" element={<ActivityLogs />} />
-            <Route path="/admin/system-status" element={<SystemStatus />} />
+
           </Route>
         </Route>
 

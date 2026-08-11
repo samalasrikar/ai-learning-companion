@@ -17,9 +17,6 @@ import {
   User,
   Users,
   BarChart3,
-  Settings as SettingsIcon,
-  ShieldAlert,
-  Activity,
   Database,
   LogOut,
 } from 'lucide-react';
@@ -45,9 +42,6 @@ export default function AppSidebar() {
     { title: 'Documents', path: '/admin/documents', icon: FileText },
     { title: 'AI Chats', path: '/admin/chats', icon: MessageSquare },
     { title: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
-    { title: 'Settings', path: '/admin/settings', icon: SettingsIcon },
-    { title: 'Activity Logs', path: '/admin/activity-logs', icon: ShieldAlert },
-    { title: 'System Status', path: '/admin/system-status', icon: Activity },
   ];
 
   const studentMenuItems = [

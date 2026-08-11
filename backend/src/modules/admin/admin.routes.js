@@ -8,18 +8,6 @@ import {
   getAdminChatById,
   deleteAdminChat,
   getAdminAnalytics,
-  getSettings,
-  updateSettings,
-  getSystemStatus,
-  getActivityLogs,
-  getStorageUsage,
-  getLoginStats,
-  maintenanceClearCache,
-  maintenanceReindex,
-  getNotifications,
-  markNotificationRead,
-  exportData,
-  globalSearch,
   getAdminRagStats,
   getAdminRagDebugInfo,
   reindexAdminDocument,
@@ -53,19 +41,5 @@ router.get('/rag/debug', getAdminRagDebugInfo);
 router.post('/rag/reindex/:documentId', reindexAdminDocument);
 router.delete('/rag/documents/:documentId', deleteAdminDocumentVectors);
 router.post('/rag/rebuild', rebuildAdminVectorStore);
-
-// Phase 3 Endpoints
-router.get('/settings', getSettings);
-router.patch('/settings', updateSettings);
-router.get('/system-status', getSystemStatus);
-router.get('/activity-logs', getActivityLogs);
-router.get('/storage', getStorageUsage);
-router.get('/login-stats', getLoginStats);
-router.post('/maintenance/clear-cache', maintenanceClearCache);
-router.post('/maintenance/reindex', maintenanceReindex);
-router.get('/notifications', getNotifications);
-router.patch('/notifications/:id/read', markNotificationRead);
-router.get('/export', exportData);
-router.get('/search', globalSearch);
 
 export default router;
