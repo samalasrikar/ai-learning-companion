@@ -24,6 +24,15 @@ Chroma Cloud Vector Database (Collection: `documents`)
 
 ---
 
+## 📚 API Documentation
+
+Complete API reference specifications and function maps:
+- 📖 [**Master API Documentation**](./API_DOCUMENTATION.md)
+- 🟢 [**Node.js Express Backend API Spec**](./backend/API.md)
+- 🐍 [**Python FastAPI RAG Service API Spec**](./backend/rag-service/API.md)
+
+---
+
 ## 🔑 Configuration Setup
 
 Configure credentials and upload paths in **`backend/.env`**:
